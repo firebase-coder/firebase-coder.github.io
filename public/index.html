@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real-time Message Board</title>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js';
+  import { getDatabase, ref, push, set, serverTimestamp, onValue, remove } from 'https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js';
+
+  // Your Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyA3A17bxSxkLkHoXkeejlHgB4SOPIC4A1Y",
+    authDomain: "realtimemessageboard-8a19f.firebaseapp.com",
+    projectId: "realtimemessageboard-8a19f",
+    storageBucket: "realtimemessageboard-8a19f.appspot.com",
+    messagingSenderId: "880840357435",
+    appId: "1:880840357435:web:796aa87dbe909df2fc8e1e"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // Function to ask for website entry password
+  const entryPassword = "erasersuits";
+  const userPassword = prompt("Please enter the password to access the website:");
+  if (userPassword !== entryPassword) {
+    document.body.innerHTML = "<h1>Incorrect password, access denied.</h1>";
+    throw new Error("Incorrect password, stopping script execution.");
+  }
+
+  // Function to post message or image
+  window.postMessage = async () => {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    if (message) {
+      // Check if message is an image URL
+      const isImageUrl = /\.(jpeg|jpg|gif|png)$/.test(message.toLowerCase());
+      const messageType = isImageUrl ? 'image' : 'text';
+      await push(ref(database, 'messages'), {
+        content: message,
+        type: messageType,
+        timestamp: serverTimestamp()
+      });
+      input.value = ''; // Clear the input field after posting
+    }
+  };
+
+  // Function to clear all posts with password protection
+  window.clearPosts = async () => {
+    const password = prompt("Enter the password to clear posts:");
+    if (password === "0607") {
+      await remove(ref(database, 'messages'));
+    } else {
+      alert("Incorrect password.");
+    }
+  };
+
+  // Listen for new messages
+  onValue(ref(database, 'messages'), (snapshot) => {
+    const messages = snapshot.val();
+    const messagesDisplay = document.getElementById('messages');
+    messagesDisplay.innerHTML = ''; // Clear current messages
+    for (const key in messages) {
+      const message = messages[key];
+      const messageElement = message.type === 'text' ? document.createElement('div') : document.createElement('img');
+      if (message.type === 'text') {
+        messageElement.textContent = message.content;
+      } else {
+        messageElement.src = message.content;
+        messageElement.style.maxWidth = "200px";
+        messageElement.style.maxHeight = "200px";
+      }
+      messagesDisplay.appendChild(messageElement);
+    }
+  });
+</script>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  #messages { margin-bottom: 20px; border: 1px solid #ddd; padding: 10px; height: 200px; overflow-y: auto; }
+  #inputArea { margin-top: 20px; }
+  input[type="text"], button { width: 70%; padding: 10px; margin-right: 10px; }
+  input[type="submit"], button { padding: 10px; }
+</style>
+</head>
+<body>
+<div id="messages"></div>
+<div id="inputArea">
+  <input type="text" id="messageInput" placeholder="Type your message or paste an image URL...">
+  <input type="submit" value="Post" onclick="postMessage()">
+  <button onclick="clearPosts()">Clear Posts</button>
+</div>
+</body>
+</html>
